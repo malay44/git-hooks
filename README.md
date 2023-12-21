@@ -14,7 +14,7 @@ The Git Journal Hook is a simple yet powerful Git hook that enhances your commit
 ### Option 1: Using curl
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/malay44/git-hooks/main/prepare-commit-msg-hooks/code-journal | bash
+curl -sSL https://raw.githubusercontent.com/malay44/git-hooks/main/prepare-commit-msg-hooks/code-journal -o myscript.sh && bash myscript.sh && rm myscript.sh 
 ```
 
 ### Option 2: Manual Installation
