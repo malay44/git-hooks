@@ -1,0 +1,75 @@
+#!/bin/bash
+
+set -e
+
+prompt_separator() {
+    read -p "Enter the commit message separator (default: LRS): " separator
+    separator=${separator:-LRS}
+}
+
+prompt_journal_folder() {
+    read -p "Enter the Coding-Journal folder location (default: ~/Documents/Coding-Journal): " journal_folder
+    journal_folder=${journal_folder:-~/Documents/Coding-Journal}
+}
+
+check_git_repository() {
+    if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+        echo "Error: Not a Git repository. Exiting."
+        exit 1
+    fi
+}
+
+install_hook() {
+    echo "$hook_script" > .git/hooks/prepare-commit-msg
+    chmod +x .git/hooks/prepare-commit-msg
+    echo "Hook installed successfully."
+}
+
+generate_hook_script() {
+    cat <<EOF
+#!/bin/bash
+
+commit_message_file=\$1
+commit_message=\$(cat "\$commit_message_file")
+
+separator="$separator"
+
+if [[ \$commit_message == *"\$separator"* ]]; then
+    part1=\$(echo "\$commit_message" | awk -v RS="\$separator" 'NR==1{print}')
+    part2=\$(echo "\$commit_message" | awk -v RS="\$separator" 'NR==2{print}')
+
+    echo "Debug: First Part: \$part1"
+    echo "Debug: Learnings: \$part2"
+
+    # Append the first part to the commit message file
+    echo "\$part1" > "\$commit_message_file"
+
+    # Create the journal file path
+    journal_file="$journal_folder/\$(date +"%d-%m-%Y").txt"
+
+    # Create parent directories if they don't exist
+    mkdir -p "\$(dirname "\$journal_file")"
+
+    # Get the current branch name and folder name
+    branch_name=\$(git rev-parse --abbrev-ref HEAD)
+    folder_name=\$(basename "\$(git rev-parse --show-toplevel)")
+
+    # Append information to the journal file
+    formatted_date=\$(date +"%H:%M %d %b %Y %Z")
+    echo "" >> "\$journal_file"
+    echo "\$folder_name:\$branch_name:\$formatted_date" >> "\$journal_file"
+    echo "\${part2:1}" >> "\$journal_file"
+fi
+EOF
+}
+
+main() {
+    check_git_repository
+    prompt_separator
+    prompt_journal_folder
+
+    hook_script=$(generate_hook_script)
+    install_hook
+}
+
+main
